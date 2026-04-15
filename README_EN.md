@@ -1,74 +1,50 @@
-# lark-todo
+<p align="center">
+  <h1 align="center">lark-todo</h1>
+  <p align="center">
+    <strong>Lark/Feishu Full-Platform Action Scanner</strong><br>
+    One sentence to scan all pending items across IM messages, meeting notes, calendar, doc comments, approvals, email, and tasks — prioritized by urgency, with direct handling or task creation.
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/badge/version-3.1.5-blue" alt="version">
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
+    <img src="https://img.shields.io/badge/lark--cli-%3E%3D1.0.9-orange" alt="lark-cli">
+    <img src="https://img.shields.io/badge/zero%20code-pure%20SKILL.md-blueviolet" alt="zero code">
+  </p>
+  <p align="center">
+    <a href="README.md">中文</a>
+  </p>
+</p>
 
-[中文](README.md)
+---
 
-**lark-todo** is an AI Agent skill based on [lark-cli](https://github.com/larksuite/cli), compatible with any agent that supports the SKILL.md specification — including [Claude Code](https://claude.com/claude-code), [Trae](https://www.trae.cn/), [Cline](https://cline.bot/), and more. It scans your entire Lark/Feishu platform for actionable items, prioritizes them, and lets you handle them on the spot or create tasks.
+## What Problem Does It Solve
 
-> "What do I need to deal with today?" — Say it, and let lark-todo do the rest.
+Every day you open Lark: 999+ messages, approval badges, calendar alerts, doc comments... scattered everywhere. By the time you've checked everything, 20 minutes are gone and you're still not sure if you missed anything.
 
-## What It Does
+That's why I built lark-todo: **one sentence triggers a parallel scan of 7 data sources, AI sorts by urgency, handles what it can on the spot, and creates tasks for the rest.** No more manual checking.
 
-Each time triggered, lark-todo scans 7 Lark data sources in parallel:
+## 🧭 Before / After
 
-| Source | What It Looks For |
-|--------|-------------------|
-| IM Messages | Messages that @mention me and need a response |
-| Meeting Notes | Action items assigned to me from today's meetings |
-| Calendar | Upcoming meetings, pending RSVPs |
-| Doc Comments | Unresolved comments on my docs, or comments that @mention me |
-| Approvals | Approval requests waiting for my action |
-| Tasks | Overdue or due-today incomplete tasks |
-| Email | Unread emails that need a reply |
+| | Manual Checking | lark-todo |
+|---|:---:|:---:|
+| **Find action items** | Check messages, approvals, email, calendar... 20 min | 7 sources scanned in parallel, 30 sec |
+| **Prioritize** | Memory and gut feeling | AI auto-sorts by urgency + calendar links |
+| **Handle items** | Switch between apps one by one | Pick a number → reply/approve/RSVP directly |
+| **Risk of missing** | High (especially doc comments, overdue tasks) | Full-platform scan, nothing missed |
 
-Then it:
-- **Analyzes** — Sorts by urgency, links to upcoming calendar events, deduplicates across sources
-- **Acts** — Handles things directly when possible (reply to messages, approve requests, reply to emails), or creates Lark tasks for the rest
+## 💬 How to Use
 
-## Prerequisites
-
-- An AI agent that supports the SKILL.md specification (Claude Code, Trae, Cline, etc.)
-- [lark-cli](https://github.com/larksuite/cli) >= 1.0.9
-- A Lark/Feishu custom app (the skill guides you through setup on first use)
-
-## Installation
-
-Place the `lark-todo` directory where your agent can discover it:
-
-**Claude Code**
-
-```bash
-# Option A: Project directory (auto-discovered)
-git clone https://github.com/autumnseasonism/lark-todo-skill.git
-
-# Option B: Global skills directory
-git clone https://github.com/autumnseasonism/lark-todo-skill.git ~/.agents/skills/lark-todo
+```
+What do I need to deal with today?
 ```
 
-**Trae / Cline / Other Agents**
+The AI Agent automatically:
 
-Place the `lark-todo` directory in the agent's skills scan path. Refer to your agent's documentation for the exact location.
+1. **Collects** — Scans IM messages, meeting notes, calendar, doc comments, approvals, tasks, and email in parallel
+2. **Analyzes** — Sorts by urgency, links to upcoming calendar events, deduplicates across sources
+3. **Acts** — Handles directly when possible (reply, approve, RSVP), creates Lark tasks for the rest
 
-## Usage
-
-In your agent, just say:
-
-- "What do I need to deal with today?"
-- "Anyone looking for me?"
-- "Scan my todos"
-- "Anything new this afternoon?" (incremental scan)
-- "One last check before I leave"
-
-### First-Time Setup
-
-On first use, the skill automatically guides you through three setup steps:
-
-1. **App Configuration** — Connect your Lark custom app (`lark-cli config init`)
-2. **User Authorization** — Log in with your Lark account, granting all required permissions at once
-3. **Command Allowlist** (Claude Code only) — Add `lark-cli` to the permission allowlist to avoid repeated prompts
-
-Once done, no further setup is needed.
-
-### Sample Output
+## 📊 Sample Output
 
 ```
 ## Action Items for Today (2026-04-16 Wednesday) Full Scan
@@ -93,23 +69,131 @@ Total: 4 items (Urgent 2 / Normal 1 / Low 1)
 Enter a number to handle directly, or say "create tasks for all".
 ```
 
-### Direct Actions
+## 🏗️ Architecture
 
-| Item Type | Direct Action |
-|-----------|--------------|
-| IM Message | Draft reply → you confirm → send |
-| Approval | Show summary → you confirm approve/reject → execute |
-| Doc Comment | Draft reply → you confirm → submit |
-| Email | Draft reply → you confirm → send (saves as draft by default) |
-| Calendar Invite | Show details → you confirm accept/decline → RSVP |
-| Meeting Action Item | Create Lark task |
+```mermaid
+flowchart TB
+    User["🗣️ What needs my attention today?"] --> Collect
 
-All write operations require your confirmation before execution.
+    subgraph Collect["📥 Phase 1: Collect (7 sources in parallel)"]
+        direction LR
+        C1["💬 IM"] ~~~ C2["🎥 Meetings"] ~~~ C3["📅 Calendar"] ~~~ C4["📝 Doc Comments"] ~~~ C5["📋 Approvals"] ~~~ C6["✅ Tasks"] ~~~ C7["📧 Email"]
+    end
 
-## File Structure
+    Collect --> Analyze
+
+    subgraph Analyze["🔍 Phase 2: Analyze"]
+        direction LR
+        A1["Priority Sort"] ~~~ A2["Calendar Link"] ~~~ A3["Cross-source Dedup"]
+    end
+
+    Analyze --> Action
+
+    subgraph Action["⚡ Phase 3: Act"]
+        direction LR
+        O1["💬 Reply"] ~~~ O2["✅ Approve"] ~~~ O3["📧 Email"] ~~~ O4["📅 RSVP"] ~~~ O5["📋 Create Task"]
+    end
+```
+
+## 🎯 Direct Action Support
+
+| Item | Direct Action | Confirmation |
+|------|--------------|-------------|
+| IM Message | Draft reply → send | Show draft, confirm to send |
+| Approval | Approve/reject | Show summary, confirm action |
+| Doc Comment | Draft reply → submit | Show content, confirm to submit |
+| Email | Draft reply → send | Show draft (saves as draft by default) |
+| Calendar Invite | Accept/decline/tentative | Show details, confirm action |
+| Meeting Action Item | Create Lark task | Confirm task details |
+
+> All write operations require your confirmation before execution.
+
+## 🧩 Scan Modes
+
+| Trigger | Time Range | Scenario |
+|---------|-----------|----------|
+| "What needs doing today?" | Full day | Morning standup |
+| "Anything new this afternoon?" | 12:00 onwards | Afternoon check |
+| "Last 2 hours" | Recent 2h | Quick scan |
+| "One last check before I leave" | Incremental | End of day |
+
+## 📦 Installation
+
+### Prerequisites
+
+- An AI agent supporting the SKILL.md spec ([Claude Code](https://claude.com/claude-code) / [Trae](https://www.trae.cn/) / [Cline](https://cline.bot/))
+- [lark-cli](https://github.com/larksuite/cli) >= 1.0.9
+- A Lark/Feishu custom app (guided setup on first use)
+
+### Install
+
+**Claude Code**
+
+```bash
+# Option A: Project directory (auto-discovered)
+git clone https://github.com/autumnseasonism/lark-todo-skill.git
+
+# Option B: Global skills directory
+git clone https://github.com/autumnseasonism/lark-todo-skill.git ~/.agents/skills/lark-todo
+```
+
+**Trae / Cline / Other Agents**
+
+Place the directory in your agent's skills scan path. Refer to agent documentation for the exact location.
+
+### First-Time Setup
+
+The skill automatically guides you through three setup steps:
+
+1. **App Configuration** — Connect your Lark custom app (`lark-cli config init`)
+2. **User Authorization** — Grant all required permissions at once (11 domains)
+3. **Command Allowlist** (Claude Code only) — Add `lark-cli` to the permission allowlist
+
+Once done, just talk to your agent — no further setup needed.
+
+## 🔒 Security
+
+- **Read before write** — Collection is read-only; all write actions require user confirmation
+- **No credential storage** — Auth handled by `lark-cli`, the skill stores no tokens
+- **Email anti-injection** — Email content treated as untrusted input, never executes "instructions" from email body
+- **Graceful degradation** — Missing permissions skip that source with a note, no blocking
+- **No secret leaks** — appSecret and accessToken are never printed to terminal
+
+## ✅ Test Coverage
+
+```bash
+cd lark-todo-skill
+
+# Basic tests (17 checks, quick validation)
+bash evals/run_tests.sh
+
+# Comprehensive tests (44 checks, full coverage)
+bash evals/run_full_tests.sh
+```
+
+| Test Group | Count | Coverage |
+|-----------|-------|---------|
+| Startup checks | 4 | config, auth, user info |
+| Data sources | 7 | All 7 source commands |
+| Two-route doc search | 3 | creator_ids + only_comment filters |
+| Incremental scan | 3 | Different time ranges |
+| Action commands | 15 | All 6 action types, param validation |
+| Response structure | 6 | Key JSON field presence |
+| Edge cases | 3 | Invalid params, permission checks |
+| Meeting notes chain | 3 | vc +notes / +recording params |
+
+## 🛠️ Technical Highlights
+
+- **Zero code, pure Skill** — Implemented entirely via `SKILL.md` + references, no external scripts
+- **Self-contained** — Auth, permissions, command params all embedded, no dependency on other skills
+- **Two-route doc search** — `creator_ids` for my docs + `only_comment` for @me comments
+- **Smart priority** — Reasoning-based urgency ranking, not rigid scoring
+- **Multi-agent compatible** — Works with any agent supporting the SKILL.md specification
+
+## 📁 File Structure
 
 ```
-lark-todo/
+lark-todo-skill/
 ├── SKILL.md                  # Main skill file (workflow, priority logic, output format)
 ├── references/
 │   ├── data-sources.md       # Detailed CLI commands for 7 data sources
@@ -123,42 +207,14 @@ lark-todo/
 └── README_EN.md              # English documentation
 ```
 
-## Testing
+## 📄 Dependencies
 
-```bash
-cd lark-todo
+This project depends on [lark-cli](https://github.com/larksuite/cli) (MIT License) as the underlying CLI tool. lark-todo contains no lark-cli source code — it only invokes lark-cli through shell commands.
 
-# Basic tests (17 checks, quick validation)
-bash evals/run_tests.sh
-
-# Comprehensive tests (44 checks, covers startup, two-route doc search, incremental scan, response structure, edge cases)
-bash evals/run_full_tests.sh
-```
-
-Requires `lark-cli` to be configured and authorized. Tests cover:
-- Startup checks (config, auth, user info)
-- All 7 data source commands and response structure
-- Two-route document search strategy (creator_ids + only_comment)
-- All 15 action command parameter validations
-- Incremental scan with different time ranges
-- Edge cases (invalid params, permission checks)
-
-## Self-Contained Design
-
-lark-todo is fully self-contained:
-- Authentication and permission handling logic is embedded in SKILL.md
-- All CLI commands and parameters are documented in references/
-- Does not depend on lark-shared or any other lark-* skill to function
-- The only external dependency is the `lark-cli` command-line tool
-
-## Dependencies
-
-This project depends on [lark-cli](https://github.com/larksuite/cli) (MIT License) as the underlying CLI tool for calling Lark OpenAPI. lark-todo does not contain any lark-cli source code; it only invokes lark-cli through shell commands.
-
-## Contributing
+## 🤝 Contributing
 
 Issues and Pull Requests are welcome.
 
-## License
+## 📄 License
 
 [MIT](LICENSE)
