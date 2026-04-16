@@ -5,7 +5,7 @@
     One sentence to scan all pending items across IM messages, meeting notes, calendar, doc comments, approvals, email, and tasks — prioritized by urgency, with direct handling or task creation.
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-3.1.5-blue" alt="version">
+    <img src="https://img.shields.io/badge/version-4.0.0-blue" alt="version">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
     <img src="https://img.shields.io/badge/lark--cli-%3E%3D1.0.9-orange" alt="lark-cli">
     <img src="https://img.shields.io/badge/zero%20code-pure%20SKILL.md-blueviolet" alt="zero code">
@@ -31,6 +31,7 @@ That's why I built lark-todo: **one sentence triggers a parallel scan of 7 data 
 | **Prioritize** | Memory and gut feeling | AI auto-sorts by urgency + calendar links |
 | **Handle items** | Switch between apps one by one | Pick a number → reply/approve/RSVP directly |
 | **Risk of missing** | High (especially doc comments, overdue tasks) | Full-platform scan, nothing missed |
+| **Multi-org** | Check each org separately | Parallel scan across orgs, merged and sorted |
 
 ## 💬 How to Use
 
@@ -117,6 +118,42 @@ flowchart TB
 | "Last 2 hours" | Recent 2h | Quick scan |
 | "One last check before I leave" | Incremental | End of day |
 
+## 🏢 Multi-Organization Support
+
+Using Lark/Feishu across multiple organizations? lark-todo automatically discovers all configured app profiles, scans them in parallel, and merges results:
+
+```
+## Action Items for Today (2026-04-16 Wednesday) Full Scan (2 orgs)
+
+### Upcoming Calendar
+  [Alice] 15:00-16:00 Design Review (pending — needs RSVP)
+  [Alice Z.] 16:30-17:00 Product Weekly (accepted)
+
+### Action Items
+
+1. [Urgent] [Alice] [Product Chat] Bob: Please review PR (4h ago)
+   └─ Source: Message | Suggestion: Reply directly
+2. [Urgent] [Alice Z.] Finish quarterly report (overdue 2 days)
+   └─ Source: Lark Task
+3. [Normal] [Alice] [Purchase Approval] From: Charlie
+   └─ Source: Approval | Suggestion: Approve directly
+---
+Total: 3 items | Alice: 2 / Alice Z.: 1
+```
+
+- Single account: behaves exactly like before, no org labels
+- Multiple accounts: each item labeled with org identity (your name in that org)
+- All items sorted by priority, not grouped by org
+- Actions automatically route to the correct org
+
+## 🔧 Account Management
+
+| Action | Trigger |
+|--------|---------|
+| Add account | "Add an enterprise account" / "Connect another Lark app" |
+| View accounts | "How many enterprise accounts do I have?" |
+| Remove account | "Remove an enterprise account" |
+
 ## 📦 Installation
 
 ### Prerequisites
@@ -186,6 +223,7 @@ bash evals/run_full_tests.sh
 
 - **Zero code, pure Skill** — Implemented entirely via `SKILL.md` + references, no external scripts
 - **Self-contained** — Auth, permissions, command params all embedded, no dependency on other skills
+- **Multi-org parallel scan** — Auto-discovers all profiles, parallel collection, cross-org merged sorting
 - **Two-route doc search** — `creator_ids` for my docs + `only_comment` for @me comments
 - **Smart priority** — Reasoning-based urgency ranking, not rigid scoring
 - **Multi-agent compatible** — Works with any agent supporting the SKILL.md specification

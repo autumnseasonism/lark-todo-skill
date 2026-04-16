@@ -2,9 +2,31 @@
   "skill_name": "lark-todo",
   "evals": [
     {
+      "id": 0,
+      "name": "multi-profile-discovery",
+      "description": "多 profile 发现：验证能读取 config.json 获取所有 profile 并检查授权状态",
+      "commands": [
+        {
+          "name": "config_file_exists",
+          "cmd": "cat ~/.lark-cli/config.json | head -1",
+          "assertions": ["file exists and is valid JSON"]
+        },
+        {
+          "name": "auth_list_all",
+          "cmd": "lark-cli auth list",
+          "assertions": ["returns JSON array", "each entry has appId field"]
+        },
+        {
+          "name": "auth_status_with_profile",
+          "cmd": "lark-cli auth status --profile $(lark-cli auth list --jq '.[0].appId' 2>/dev/null || echo 'default')",
+          "assertions": ["has identity field", "has userName field"]
+        }
+      ]
+    },
+    {
       "id": 1,
       "name": "full-scan-all-sources",
-      "description": "全量扫描：验证 7 个数据源命令全部可执行且返回有效 JSON",
+      "description": "全量扫描：验证 7 个数据源命令全部可执行且返回有效 JSON（单 profile 模式）",
       "commands": [
         {
           "name": "contact_get_user",
@@ -49,6 +71,53 @@
       ]
     },
     {
+      "id": 1.5,
+      "name": "full-scan-with-profile",
+      "description": "多 profile 扫描：验证带 --profile 参数时 7 个数据源命令仍可正常执行",
+      "commands": [
+        {
+          "name": "contact_get_user_profile",
+          "cmd": "lark-cli contact +get-user --format json --profile <PROFILE>",
+          "assertions": ["ok=true", "has open_id field"]
+        },
+        {
+          "name": "im_messages_search_profile",
+          "cmd": "lark-cli im +messages-search --is-at-me --start \"<TODAY>T00:00:00+08:00\" --end \"<TODAY>T23:59:59+08:00\" --page-all --format json --profile <PROFILE>",
+          "assertions": ["ok=true", "has data.messages array"]
+        },
+        {
+          "name": "vc_search_profile",
+          "cmd": "lark-cli vc +search --start \"<TODAY>\" --end \"<TODAY>\" --format json --page-size 30 --profile <PROFILE>",
+          "assertions": ["ok=true", "has data.items array"]
+        },
+        {
+          "name": "calendar_agenda_profile",
+          "cmd": "lark-cli calendar +agenda --format json --profile <PROFILE>",
+          "assertions": ["ok=true", "has data array"]
+        },
+        {
+          "name": "docs_search_profile",
+          "cmd": "lark-cli docs +search --filter '{\"open_time\":{\"start\":\"<TODAY>T00:00:00+08:00\"},\"sort_type\":\"OPEN_TIME\"}' --format json --profile <PROFILE>",
+          "assertions": ["ok=true", "has data.results array"]
+        },
+        {
+          "name": "approval_tasks_query_profile",
+          "cmd": "lark-cli approval tasks query --params '{\"topic\":\"1\"}' --format json --profile <PROFILE>",
+          "assertions": ["code=0", "has data.tasks array"]
+        },
+        {
+          "name": "task_get_my_tasks_profile",
+          "cmd": "lark-cli task +get-my-tasks --complete=false --due-end \"<TODAY>T23:59:59+08:00\" --format json --profile <PROFILE>",
+          "assertions": ["ok=true"]
+        },
+        {
+          "name": "mail_triage_profile",
+          "cmd": "lark-cli mail +triage --filter '{\"folder\":\"inbox\",\"is_unread\":true,\"time_range\":{\"start_time\":\"<TODAY>T00:00:00+08:00\",\"end_time\":\"<TODAY>T23:59:59+08:00\"}}' --max 20 --format json --profile <PROFILE>",
+          "assertions": ["has messages array"]
+        }
+      ]
+    },
+    {
       "id": 2,
       "name": "action-commands-dry-run",
       "description": "行动命令验证：用 --dry-run 或 schema 确认行动阶段命令参数正确",
@@ -56,7 +125,7 @@
         {
           "name": "im_reply_help",
           "cmd": "lark-cli im +messages-reply -h",
-          "assertions": ["has --message-id flag", "has --content flag"]
+          "assertions": ["has --message-id flag", "has --content flag", "has --profile flag"]
         },
         {
           "name": "approval_approve_schema",
@@ -76,17 +145,17 @@
         {
           "name": "mail_reply_help",
           "cmd": "lark-cli mail +reply -h",
-          "assertions": ["has --message-id flag", "has --body flag", "has --confirm-send flag"]
+          "assertions": ["has --message-id flag", "has --body flag", "has --confirm-send flag", "has --profile flag"]
         },
         {
           "name": "calendar_rsvp_help",
           "cmd": "lark-cli calendar +rsvp -h",
-          "assertions": ["has --event-id flag", "has --rsvp-status flag"]
+          "assertions": ["has --event-id flag", "has --rsvp-status flag", "has --profile flag"]
         },
         {
           "name": "task_create_help",
           "cmd": "lark-cli task +create -h",
-          "assertions": ["has --summary flag", "has --assignee flag", "has --due flag"]
+          "assertions": ["has --summary flag", "has --assignee flag", "has --due flag", "has --profile flag"]
         }
       ]
     },
@@ -104,6 +173,33 @@
           "name": "mail_incremental",
           "cmd": "lark-cli mail +triage --filter '{\"folder\":\"inbox\",\"is_unread\":true,\"time_range\":{\"start_time\":\"<TODAY>T12:00:00+08:00\",\"end_time\":\"<TODAY>T23:59:59+08:00\"}}' --max 20 --format json",
           "assertions": ["has messages array"]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "profile-management",
+      "description": "Profile 管理：验证企业账号管理相关命令可用",
+      "commands": [
+        {
+          "name": "config_show",
+          "cmd": "lark-cli config show",
+          "assertions": ["has appId field", "has profile field"]
+        },
+        {
+          "name": "config_init_help",
+          "cmd": "lark-cli config init -h",
+          "assertions": ["has --new flag", "has --name flag"]
+        },
+        {
+          "name": "config_remove_help",
+          "cmd": "lark-cli config remove -h",
+          "assertions": ["has --profile flag"]
+        },
+        {
+          "name": "auth_list",
+          "cmd": "lark-cli auth list",
+          "assertions": ["returns JSON array"]
         }
       ]
     }
