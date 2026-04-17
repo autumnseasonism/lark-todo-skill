@@ -182,19 +182,23 @@ flowchart TB
 
 ### 安装方式
 
-**Claude Code**
+**推荐方式：直接对 Agent 说**
 
-```bash
-# 方式一：放在项目目录（自动发现）
-git clone https://github.com/autumnseasonism/lark-todo-skill.git
-
-# 方式二：放在全局 skills 目录
-git clone https://github.com/autumnseasonism/lark-todo-skill.git ~/.agents/skills/lark-todo
+```text
+请帮我安装这个 skill：
+https://github.com/autumnseasonism/lark-todo-skill.git
 ```
 
-**Trae / Cline / 其他 Agent**
+如果该 Agent 支持安装 skill，通常这就是最简单的方式。
 
-将 `lark-todo` 目录放到对应 Agent 的 skills 扫描路径下，具体路径请参考各 Agent 的文档。
+**如果你想手动安装**
+
+```bash
+# 放在当前项目目录，或放到 Agent 的 skills 扫描路径下
+git clone https://github.com/autumnseasonism/lark-todo-skill.git
+```
+
+将仓库目录放到当前项目目录，或对应 Agent 的 skills 扫描路径下。
 
 ### 首次使用
 
@@ -202,7 +206,7 @@ git clone https://github.com/autumnseasonism/lark-todo-skill.git ~/.agents/skill
 
 1. **应用配置** — 绑定飞书自建应用（`lark-cli config init`）
 2. **用户授权** — 一次性授权所有需要的权限（11 个 domain）
-3. **命令白名单**（仅 Claude Code）— 将 `lark-cli` 加入白名单
+3. **命令授权** — 如果 Agent 会拦截命令执行，允许 `lark-cli`
 
 三步完成后，后续使用直接说话即可。
 

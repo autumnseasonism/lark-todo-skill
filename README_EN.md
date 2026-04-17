@@ -180,19 +180,23 @@ Total: 3 items | Alice: 2 / Alice Z.: 1
 
 ### Install
 
-**Claude Code**
+**Recommended: just tell your Agent**
 
-```bash
-# Option A: Project directory (auto-discovered)
-git clone https://github.com/autumnseasonism/lark-todo-skill.git
-
-# Option B: Global skills directory
-git clone https://github.com/autumnseasonism/lark-todo-skill.git ~/.agents/skills/lark-todo
+```text
+Please install this skill:
+https://github.com/autumnseasonism/lark-todo-skill.git
 ```
 
-**Trae / Cline / Other Agents**
+If the agent supports skill installation, this is usually the simplest option.
 
-Place the directory in your agent's skills scan path. Refer to agent documentation for the exact location.
+**If you want to install it manually**
+
+```bash
+# Put it in the current project directory, or in your agent's skill scan path
+git clone https://github.com/autumnseasonism/lark-todo-skill.git
+```
+
+Place the repository directory in the current project directory, or in that agent's skill scan path.
 
 ### First-Time Setup
 
@@ -200,7 +204,7 @@ The skill automatically guides you through three setup steps:
 
 1. **App Configuration** — Connect your Lark custom app (`lark-cli config init`)
 2. **User Authorization** — Grant all required permissions at once (11 domains)
-3. **Command Allowlist** (Claude Code only) — Add `lark-cli` to the permission allowlist
+3. **Command Permission** — If your agent asks before running commands, allow `lark-cli`
 
 Once done, just talk to your agent — no further setup needed.
 
