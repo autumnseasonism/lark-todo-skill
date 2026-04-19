@@ -10,6 +10,13 @@ python scripts/lark_cli_json.py \
 python scripts/lark_cli_json.py \
   --json-arg params='{"topic":"1"}' \
   -- approval tasks query --format json
+
+PowerShell-friendly pattern:
+
+$env:LARK_JSON='{"topic":"1"}'
+python scripts/lark_cli_json.py \
+  --json-env params=LARK_JSON \
+  -- approval tasks query --format json
 """
 
 from __future__ import annotations
