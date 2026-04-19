@@ -244,17 +244,29 @@ Profile B: [IM] [会议] [日程] [文档] [审批] [任务] [邮件]  ← 7 个
 
 所有命令追加 `--profile <PROFILE>` 参数。每条采集到的数据项需额外记录其所属 `profile`（appId），供行动阶段路由使用。
 
+> **命令参数提醒**：本技能里部分原生 API 风格命令（如 `approval tasks query`、`drive file.comments list`、`wiki spaces get_node`）通常通过 `--params '{...}'` 传查询参数，而不是 `--topic`、`--file-token`、`--token` 这类直接 flag。拿不准时先读 [references/data-sources.md](references/data-sources.md) 或执行 `lark-cli schema <service>.<resource>.<method>`。
+>
+> **PowerShell 兼容提醒**：在 Windows PowerShell 中，JSON-heavy 参数（如 `--filter`、`--params`、`--data`）有时会被 shell 改写，出现 `not valid JSON` / `invalid format`。遇到这种情况时：
+> - 优先对支持 stdin 的命令改用 `--params -` / `--data -`
+> - 对只接受内联 JSON 的参数（如部分 `--filter`），改用 [scripts/lark_cli_json.py](scripts/lark_cli_json.py) 直接传 argv，必要时用 `--json-env` 从环境变量读取 JSON，避免继续猜引号转义
+> - 不要在 PowerShell 里反复试错引号
+>
 > **并行执行注意**：部分 Agent 环境中，一个并行命令失败会导致其余命令被取消。为避免这种情况，确保每个命令独立处理错误（如空结果不应视为失败）。如果并行执行出现级联取消，改为串行逐个执行即可。多账号模式下，如果某个 profile 整体不可用（如 token 过期且刷新失败），跳过该 profile 并告知用户，继续扫描其他 profile。
 
 | # | 数据源 | 核心命令 | 找什么 |
 |---|-------|---------|--------|
 | 1 | IM 消息 | `im +messages-search --is-at-me --profile <PROFILE>` | 今天 @我的消息中需要我回应的 |
-| 2 | 会议纪要 | `vc +search --profile <PROFILE>` → `vc +notes --profile <PROFILE>` | 今天已结束会议中分配给我的待办 |
+| 2 | 会议纪要 | `vc +search --profile <PROFILE>` → `vc +notes --meeting-ids "<id1>,<id2>" --profile <PROFILE>` | 今天已结束会议中分配给我的待办 |
 | 3 | 今日日程 | `calendar +agenda --profile <PROFILE>` | 未开始的会议、待确认的邀请 |
-| 4 | 文档评论 | `docs +search --profile <PROFILE>`（两路）→ `drive file.comments list --profile <PROFILE>` | 我的文档上所有未解决评论 + 别人文档上 @我/回复我/我参与的评论 |
-| 5 | 审批任务 | `approval tasks query --profile <PROFILE>` | 等我处理的审批单 |
+| 4 | 文档评论 | `docs +search --profile <PROFILE>`（两路）→ `drive file.comments list --params '{"file_token":"<FILE_TOKEN>","file_type":"<FILE_TYPE>","is_solved":false}' --profile <PROFILE>` | 我的文档上所有未解决评论 + 别人文档上 @我/回复我/我参与的评论 |
+| 5 | 审批任务 | `approval tasks query --params '{"topic":"1"}' --profile <PROFILE>` | 等我处理的审批单 |
 | 6 | 已有任务 | `task +get-my-tasks --profile <PROFILE>` | 今天到期或已过期的未完成任务 |
 | 7 | 未读邮件 | `mail +triage --profile <PROFILE>` | 今天收到的未读邮件中需要回复的 |
+
+> **易错点速记**：
+> - `im +threads-messages-list` 的参数名是 `--thread`，不是 `--thread-id`
+> - `vc +notes` 用 `--meeting-ids`（复数），不是 `--meeting-id`
+> - `/wiki/...` 链接要先 `wiki spaces get_node --params '{"token":"<WIKI_TOKEN>"}'`，再用返回的 `obj_token` / `obj_type` 调文档评论接口
 
 ### 什么算"需要我行动"
 
@@ -479,16 +491,16 @@ lark-cli task +create \
 |--------|------|-------|
 | 用户信息 | `contact +get-user --profile <P>` | `contact:user.base:readonly` |
 | IM 消息 | `im +messages-search --profile <P>` | `search:message` |
-| IM 上下文 | `im +threads-messages-list --profile <P>` | `im:message:readonly`, `im:chat:read` |
+| IM 上下文 | `im +threads-messages-list --thread <THREAD_ID> --profile <P>` | `im:message:readonly`, `im:chat:read` |
 | 会议 | `vc +search --profile <P>` | `vc:meeting.search:read` |
-| 纪要 | `vc +notes --profile <P>` | `vc:meeting.meetingevent:read`, `vc:note:read` |
+| 纪要 | `vc +notes --meeting-ids "<ID1>,<ID2>" --profile <P>` | `vc:meeting.meetingevent:read`, `vc:note:read` |
 | 录制 | `vc +recording --profile <P>` | `vc:record:readonly` |
 | 纪要 AI 产物 | `vc +notes --minute-tokens --profile <P>` | `minutes:minutes:readonly`, `minutes:minutes.artifacts:read` |
 | 日程 | `calendar +agenda --profile <P>` | `calendar:calendar.event:read` |
 | 文档搜索 | `docs +search --profile <P>` | `search:docs:read` |
-| 文档评论 | `drive file.comments list --profile <P>` | `docs:document.comment:read` |
-| Wiki 节点 | `wiki spaces get_node --profile <P>` | `wiki:wiki:readonly` |
-| 审批 | `approval tasks query --profile <P>` | `approval:task:read` |
+| 文档评论 | `drive file.comments list --params '{"file_token":"<FILE_TOKEN>","file_type":"<FILE_TYPE>"}' --profile <P>` | `docs:document.comment:read` |
+| Wiki 节点 | `wiki spaces get_node --params '{"token":"<WIKI_TOKEN>"}' --profile <P>` | `wiki:wiki:readonly` |
+| 审批 | `approval tasks query --params '{"topic":"1"}' --profile <P>` | `approval:task:read` |
 | 任务 | `task +get-my-tasks --profile <P>` | `task:task:read` |
 | 邮件 | `mail +triage --profile <P>` | `mail:user_mailbox.message:readonly` |
 

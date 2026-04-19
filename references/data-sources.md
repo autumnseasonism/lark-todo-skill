@@ -5,6 +5,13 @@
 > 所有命令中的 `<SCAN_START>` / `<SCAN_END>` 根据扫描模式替换，`<TODAY>` 用 `date +%Y-%m-%d` 获取。时间格式为 ISO 8601 含时区（如 `2026-04-15T00:00:00+08:00`）。**小时必须补前导零**（`T08:00:00` 而非 `T8:00:00`），否则 API 返回 400。
 >
 > **多账号模式**：所有命令追加 `--profile <PROFILE>` 参数（`<PROFILE>` 为 appId），确保操作目标是正确的企业。单账号模式下可省略。
+>
+> **原生 API 命令提醒**：`approval tasks query`、`drive file.comments list`、`wiki spaces get_node` 这类命令在 `lark-cli` 中通常只暴露 `--params` / `--data`，不要自行猜测 `--topic`、`--file-token`、`--token` 等 flag 名。拿不准时先跑 `lark-cli schema <service>.<resource>.<method>`。
+>
+> **PowerShell 提醒**：如果在 Windows PowerShell 中直接粘贴 JSON 参数后看到 `not valid JSON`、`invalid --filter`、`--params invalid format`，先不要继续试错转义。处理顺序是：
+> 1. 对支持 stdin 的命令优先改用 `--params -` / `--data -`
+> 2. 对只接受内联 JSON 的命令（例如 `docs +search --filter`、`mail +triage --filter`），改用 [../scripts/lark_cli_json.py](../scripts/lark_cli_json.py) 直接传 argv；在 PowerShell 中优先用 `--json-env` 从环境变量读取 JSON
+> 3. 确认问题是 shell 传参，而不是技能逻辑或 API 权限
 
 ---
 
@@ -28,6 +35,7 @@ lark-cli im +messages-search \
 
 ```bash
 # 查看话题回复链
+# 参数名是 --thread，不是 --thread-id
 lark-cli im +threads-messages-list --thread <thread_id> --sort desc --page-size 10 --profile <PROFILE>
 
 # 查看会话近期消息
@@ -49,6 +57,7 @@ lark-cli vc +search --start "<TODAY>" --end "<TODAY>" --format json --page-size 
 ### 2b. 获取纪要
 
 ```bash
+# 参数名是 --meeting-ids（复数），不是 --meeting-id
 lark-cli vc +notes --meeting-ids "<id1>,<id2>,...,<idN>" --profile <PROFILE>
 ```
 
@@ -102,7 +111,7 @@ lark-cli docs +search \
 
 建议默认扫描前 10 篇（每篇需单独调评论 API，10 篇 ≈ 10-20 次调用）。用户要求更全面时可翻页扩大范围，没有硬上限，但每多 10 篇约增加 10-20 次 API 调用，提前告知用户等待时间会相应增加。
 
-**从搜索结果中提取**（后续步骤需要）：每个文档的 `token`（用作 4c 中的 `<FILE_TOKEN>`）和 `doc_types`（转小写后用作 `<FILE_TYPE>`）。
+**从搜索结果中提取**（供 4c 归一化前使用）：每个文档的原始 `token` 和 `doc_types`。如果结果对应的是 `/wiki/...` 节点，不要直接拿原始 `token` 调评论接口，必须先按 4c 转成真实 `obj_token` / `obj_type`。
 
 ### 4b. 路线二：搜索评论中 @我的文档
 
@@ -121,11 +130,18 @@ lark-cli docs +search \
 
 ### 4c. 逐文档检查评论
 
-对 4a + 4b 去重后的文档列表，逐个查评论：
+对 4a + 4b 去重后的文档列表，逐个查评论。执行前先把文档 token 归一化：普通 `doc` / `docx` / `sheet` 直接使用搜索结果里的 token 和类型；`/wiki/...` 节点先换成真实云文档的 `obj_token` / `obj_type`。
 
 ```bash
 # 先查参数结构（首次使用时执行）
 lark-cli schema drive.file.comments.list
+
+# 如果命中的是 /wiki/... 链接，先把 wiki token 转成真实云文档 token
+lark-cli wiki spaces get_node \
+  --params '{"token":"<WIKI_TOKEN>"}' \
+  --format json \
+  --profile <PROFILE>
+# 从返回中提取 node.obj_token 和 node.obj_type，覆盖后续的 <FILE_TOKEN> / <FILE_TYPE>
 
 # 查询未解决评论
 lark-cli drive file.comments list \
@@ -136,7 +152,7 @@ lark-cli drive file.comments list \
 
 **file_type 映射**：`docs +search` 返回的 `doc_types` 是大写（`DOCX`、`DOC`、`SHEET`），传入 `file.comments list` 时需转为小写（`docx`、`doc`、`sheet`）。
 
-**Wiki 链接特殊处理**：`/wiki/xxx` 链接必须先查 `lark-cli wiki spaces get_node --params '{"token":"<WIKI_TOKEN>"}' --profile <PROFILE>` 获取真实 `obj_token` 和 `obj_type`，再用真实 token 查评论。
+**Wiki 链接特殊处理**：`/wiki/xxx` 链接必须先查 `lark-cli wiki spaces get_node --params '{"token":"<WIKI_TOKEN>"}' --profile <PROFILE>` 获取真实 `obj_token` 和 `obj_type`，再用真实 token 查评论。评论扫描和后续回复都要使用归一化后的 `obj_token` / `obj_type`，不要回退到原始 wiki token。
 
 **评论结构**：`items` 是评论卡片列表，每个 `item.reply_list.replies` 中第一条 reply 是评论正文。
 
@@ -156,7 +172,7 @@ lark-cli drive file.comments list \
 ### 提取字段（仅对过滤后保留的评论）
 
 - 展示用：文档标题、评论正文、评论者姓名、`is_solved` 状态
-- 行动用（后续回复评论必需）：`comment_id`（评论卡片 ID）、`file_token`（来自搜索结果）、`file_type`（需转小写）——这三个值必须在采集时一并保存，否则行动阶段无法回复评论
+- 行动用（后续回复评论必需）：`comment_id`（评论卡片 ID）、归一化后的 `file_token`、归一化后的 `file_type`——这里的 `file_token` / `file_type` 必须是实际用于 comments / reply 接口的值；wiki 来源文档要保存 `obj_token` / `obj_type`，而不是原始 wiki token
 
 ---
 

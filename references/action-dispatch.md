@@ -5,6 +5,8 @@
 > **参数发现**：对于下方未给出完整参数的命令，执行前先用 `lark-cli schema <service>.<resource>.<method>` 查看参数结构，不要猜测字段格式。
 >
 > **多账号模式**：所有命令追加 `--profile <PROFILE>` 参数，路由到事项所属的企业。`<PROFILE>` 为该事项在采集阶段记录的 appId。单账号模式下可省略。
+>
+> **PowerShell 提醒**：写操作常带 `--params` / `--data` JSON。如果在 Windows PowerShell 中直接执行后出现 `invalid format` 或 `not valid JSON`，优先改用 `--params -` / `--data -`（若该命令支持 stdin）；否则改用 [../scripts/lark_cli_json.py](../scripts/lark_cli_json.py) 直接传 argv，在 PowerShell 中优先用 `--json-env` 读取环境变量里的 JSON。
 
 ---
 
@@ -45,7 +47,7 @@ lark-cli drive file.comment.replys create \
   --profile <PROFILE>
 ```
 
-> `file_token`、`file_type`、`comment_id` 来自采集阶段文档评论扫描的返回结果。如参数结构与上述不符，以 `lark-cli schema` 返回为准。
+> `file_token`、`file_type`、`comment_id` 来自采集阶段文档评论扫描的返回结果。如源文档最初是 `/wiki/...` 链接，这里的 `file_token` / `file_type` 必须是采集阶段已经归一化后的 `obj_token` / `obj_type`，不能回退成原始 wiki token。如参数结构与上述不符，以 `lark-cli schema` 返回为准。
 
 ### 回复邮件
 
