@@ -2,13 +2,14 @@
   <h1 align="center">lark-todo</h1>
   <p align="center">
     <strong>飞书全平台待办行动扫描器 · 支持多企业账号</strong><br>
-    一句话触发全平台扫描：自动采集 IM 消息、会议纪要、日程、文档评论、审批、邮件、已有任务，智能排列优先级，支持直接处理或创建飞书任务。多个企业账号并行扫描，跨企业合并排序。
+    一句话触发全平台扫描：自动采集 IM 消息、会议纪要、日程、文档评论、待办审批、我发起的审批、邮件、已有任务，智能排列优先级，支持直接处理或创建飞书任务。多个企业账号并行扫描，跨企业合并排序。
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-4.0.0-blue" alt="version">
+    <img src="https://img.shields.io/badge/version-4.2.0-blue" alt="version">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
     <img src="https://img.shields.io/badge/lark--cli-%3E%3D1.0.9-orange" alt="lark-cli">
-    <img src="https://img.shields.io/badge/zero%20code-pure%20SKILL.md-blueviolet" alt="zero code">
+    <img src="https://img.shields.io/badge/mode-hybrid%20%7C%20SKILL.md%20%2B%20optional%20Python-blueviolet" alt="hybrid mode">
+    <img src="https://img.shields.io/badge/python-stdlib%20only-informational" alt="python stdlib only">
     <img src="https://img.shields.io/badge/multi--org-✓-brightgreen" alt="multi-org">
   </p>
   <p align="center">
@@ -22,13 +23,13 @@
 
 每天打开飞书，消息 999+、审批红点、日程提醒、文档评论……分散在各个角落，翻一圈下来 20 分钟过去了，还不确定有没有漏掉什么。在多个公司都有飞书账号？那就翻好几遍。
 
-所以我做了 lark-todo：**一句话下去，所有企业账号 × 7 个数据源并行扫描，AI 按紧急程度跨企业合并排序，能当场处理的直接处理，不能的创建任务。** 一个账号还是多个，都只需要说一句话。
+所以我做了 lark-todo：**一句话下去，所有企业账号 × 8 个数据源并行扫描，AI 按紧急程度跨企业合并排序，能当场处理的直接处理，不能的创建任务。** 一个账号还是多个，都只需要说一句话。
 
 ## 🧭 Before / After
 
 | | 手动翻飞书 | lark-todo |
 |---|:---:|:---:|
-| **找待办** | 翻消息、翻审批、翻邮件、翻日历…… 20 min | 7 个数据源并行扫描，30 秒 |
+| **找待办** | 翻消息、翻审批、翻邮件、翻日历…… 20 min | 8 个数据源并行扫描，30 秒 |
 | **判优先级** | 靠记忆和直觉 | AI 按紧急程度自动排序 + 日程关联 |
 | **处理事项** | 逐个切换应用操作 | 选序号直接回复/审批/RSVP |
 | **遗漏风险** | 高（尤其是文档评论和过期任务） | 全平台扫描，不漏 |
@@ -42,7 +43,7 @@
 
 AI Agent 自动完成：
 
-1. **采集** — 并行扫描 IM 消息、会议纪要、日程、文档评论、审批、已有任务、未读邮件
+1. **采集** — 并行扫描 IM 消息、会议纪要、日程、文档评论、待办审批、我发起的审批、已有任务、未读邮件
 2. **研判** — 按紧急程度排序，关联即将到来的日程，跨源去重
 3. **行动** — 能当场解决的直接处理（回复消息、批审批、回邮件），不能的创建飞书任务
 
@@ -85,15 +86,15 @@ flowchart TB
 
     Discover["🔍 发现所有企业 Profile"] --> Collect
 
-    subgraph Collect["📥 阶段一：采集（多企业 × 7 数据源，全部并行）"]
+    subgraph Collect["📥 阶段一：采集（多企业 × 8 数据源，全部并行）"]
         direction LR
         subgraph OrgA["🏢 企业甲"]
             direction LR
-            C1["💬 IM"] ~~~ C2["🎥 会议"] ~~~ C3["📅 日程"] ~~~ C4["📝 评论"] ~~~ C5["📋 审批"] ~~~ C6["✅ 任务"] ~~~ C7["📧 邮件"]
+            C1["💬 IM"] ~~~ C2["🎥 会议"] ~~~ C3["📅 日程"] ~~~ C4["📝 评论"] ~~~ C5["📋 待批"] ~~~ C8["📤 我发起"] ~~~ C6["✅ 任务"] ~~~ C7["📧 邮件"]
         end
         subgraph OrgB["🏢 企业乙"]
             direction LR
-            D1["💬 IM"] ~~~ D2["🎥 会议"] ~~~ D3["📅 日程"] ~~~ D4["📝 评论"] ~~~ D5["📋 审批"] ~~~ D6["✅ 任务"] ~~~ D7["📧 邮件"]
+            D1["💬 IM"] ~~~ D2["🎥 会议"] ~~~ D3["📅 日程"] ~~~ D4["📝 评论"] ~~~ D5["📋 待批"] ~~~ D8["📤 我发起"] ~~~ D6["✅ 任务"] ~~~ D7["📧 邮件"]
         end
     end
 
@@ -177,8 +178,10 @@ flowchart TB
 ### 前置条件
 
 - 支持 SKILL.md 规范的 Agent 应用（[Claude Code](https://claude.com/claude-code) / [Trae](https://www.trae.cn/) / [Cline](https://cline.bot/) 等）
-- [lark-cli](https://github.com/larksuite/cli) >= 1.0.9
+- **Node.js >= 18**（用于承载 lark-cli；skill 首次运行时会自动 `npm install -g @larksuite/cli`，已装会跳过）
 - 一个飞书自建应用（首次使用时自动引导配置）
+
+> lark-cli 不需要手动预装：`scripts/bootstrap.sh` 在 Step 0 幂等探测，已在跳过、缺失自动装。装不上时（如 Node.js 缺失、npm 权限错误）会返回非 0 退出码，skill 会清晰停在 Step 0 并把具体修复指令转给你——**不会在后续步骤里静默失败**。
 
 ### 安装方式
 
@@ -202,13 +205,14 @@ git clone https://github.com/autumnseasonism/lark-todo-skill.git
 
 ### 首次使用
 
-技能会自动引导你完成三步初始化，无需手动配置：
+技能会自动引导你完成四步初始化，无需手动配置：
 
+0. **依赖装配**（Step 0）— `scripts/bootstrap.sh` 检测 lark-cli，缺失时自动 `npm install -g @larksuite/cli`；已装或装完即跳过
 1. **应用配置** — 绑定飞书自建应用（`lark-cli config init`）
 2. **用户授权** — 一次性授权所有需要的权限（11 个 domain）
 3. **命令授权** — 如果 Agent 会拦截命令执行，允许 `lark-cli`
 
-三步完成后，后续使用直接说话即可。
+四步完成后，后续使用直接说话即可。Step 0 幂等，每次会话头重跑也只是几百毫秒探测开销。
 
 ## 🔒 安全与边界
 
@@ -226,42 +230,95 @@ cd lark-todo-skill
 # 基础测试（17 项，快速验证）
 bash evals/run_tests.sh
 
-# 综合测试（44 项，完整覆盖）
+# 综合测试（49 项，完整覆盖）
 bash evals/run_full_tests.sh
+
+# 加速器单元测试（16 项，离线 shim，不连飞书）
+python -m pytest evals/test_scan.py -v
 ```
 
 | 测试组 | 数量 | 覆盖内容 |
 |--------|------|---------|
+| Step 0 依赖自检 | 5 | bootstrap.sh 探测、退出码分支（0/2）、node 缺失提示 |
 | 启动检查 | 4 | config、auth、用户信息 |
-| 数据源采集 | 7 | 7 个数据源命令可用性 |
+| 数据源采集 | 8 | 8 个数据源命令可用性 |
 | 两路文档搜索 | 3 | creator_ids 过滤、only_comment 过滤 |
 | 增量扫描 | 3 | 不同时间范围 |
 | 行动命令 | 15 | 6 种行动的参数逐个验证 |
 | 响应结构 | 6 | 关键 JSON 字段存在性 |
 | 边界情况 | 3 | 无效参数、权限检查 |
 | 会议纪要链路 | 3 | vc +notes / +recording 参数 |
+| 加速器 pytest | 16 | scan.py 命令构造、并行执行、参数校验（shim 替身） |
 
 ## 🛠️ 技术特点
 
-- **零代码，纯 Skill** — 完全通过 `SKILL.md` + references 实现，无外部脚本依赖
+- **Hybrid 模式** — 默认纯 SKILL.md 流程跑遍所有 Agent；环境里有 Python 3.8+ 时自动启用 `scripts/scan.py` 加速器，一次并行完成 8 数据源采集；加速器任何失败都自动降级回纯 SKILL.md，不阻塞扫描
+- **零 pip 依赖** — 加速器仅用 Python 标准库（`asyncio` + `subprocess` + `json`），不需要 `pip install` 任何包
+- **只加速不改判** — 脚本只做"并行扫描 + 结果归一化"，过滤/优先级/去重/行动仍由 Agent 侧判断，行为与纯 SKILL.md 模式一致
 - **自包含设计** — 认证、权限、命令参数全部内嵌，不依赖 lark-shared 或其他技能包
 - **多企业并行扫描** — 自动发现所有 profile，多企业并行采集，跨企业合并排序
 - **两路文档搜索** — `creator_ids` 搜我的文档 + `only_comment` 搜 @我的评论，避免遗漏
 - **智能优先级** — 不用死板打分，基于"拖延后果严重性"推理排序
 - **多 Agent 兼容** — Claude Code / Trae / Cline 等支持 SKILL.md 的 Agent 均可使用
 
+## ⚡ 加速模式（可选）
+
+Skill 默认按 `SKILL.md` 的"阶段一：采集"步骤，由 Agent 逐条并行发起 lark-cli 命令——这是**纯 SKILL.md 模式**，任何支持 shell 的 Agent 都能跑，不需要任何脚本。
+
+如果环境里同时有：
+
+1. Python 3.8+（`python --version` 或 `python3 --version` 能跑）
+2. 仓库里的 `scripts/scan.py`（`test -f` 存在）
+
+Skill 会自动走**加速模式**：把 8 数据源的 9 条并行命令交给 `scripts/scan.py` 一次性完成，减少 Agent 侧的工具调用轮次。加速器只做"并行扫描 + 结果归一化"，输出是这样的 JSON 信封：
+
+```json
+{
+  "mode": "full",
+  "scan_start": "2026-04-21T00:00:00+08:00",
+  "scan_end":   "2026-04-21T23:59:59+08:00",
+  "profiles": [
+    {
+      "profile": "cli_xxx",
+      "sources": {
+        "im":                 { "ok": true,  "data": { ... } },
+        "vc_search":          { "ok": true,  "data": { ... } },
+        "calendar":           { "ok": true,  "data": { ... } },
+        "docs_mine":          { "ok": true,  "data": { ... } },
+        "docs_at_me":         { "ok": true,  "data": { ... } },
+        "approval_pending":   { "ok": true,  "data": { ... } },
+        "approval_initiated": { "ok": true,  "data": { ... } },
+        "tasks":              { "ok": true,  "data": { ... } },
+        "mail":               { "ok": false, "error": "timeout" }
+      }
+    }
+  ]
+}
+```
+
+**约束**：
+
+- 脚本**不做**过滤/优先级/去重/写操作——这些仍在 Agent 侧用判断力完成
+- 脚本**不跑**级联命令（`vc +notes` 拉纪要、`drive file.comments list` 逐文档查评论）——这些需要前一步结果，Agent 按 `references/data-sources.md` 继续
+- 脚本任何失败（依赖缺失、崩溃、非 0 退出）都**降级**到纯 SKILL.md 流程，不会阻塞本次扫描
+
 ## 📁 文件结构
 
 ```
 lark-todo-skill/
 ├── SKILL.md                  # 主技能文件（流程逻辑、优先级判断、输出格式）
+├── scripts/
+│   ├── bootstrap.sh          # Step 0：lark-cli 幂等探测 + 缺失时自动 npm 安装
+│   └── scan.py               # 可选加速器：并行发起 8 数据源 × N profile 的 lark-cli 命令
 ├── references/
-│   ├── data-sources.md       # 7 个数据源的详细 CLI 命令和字段提取规则
+│   ├── data-sources.md       # 8 个数据源的详细 CLI 命令和字段提取规则
 │   └── action-dispatch.md    # 6 种行动的详细 CLI 命令和安全规则
 ├── evals/
-│   ├── evals.json            # 测试用例定义
+│   ├── evals.json            # 测试用例定义（CLI 冒烟）
+│   ├── skill-prompts.json    # skill-creator 规范的 prompt 级评测
 │   ├── run_tests.sh          # 基础测试（17 项）
-│   └── run_full_tests.sh     # 综合测试（44 项）
+│   ├── run_full_tests.sh     # 综合测试（49 项）
+│   └── test_scan.py          # 加速器 pytest（单元 + 端到端）
 ├── LICENSE                   # MIT License
 ├── README.md                 # 中文文档
 └── README_EN.md              # English documentation

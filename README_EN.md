@@ -5,7 +5,7 @@
     One sentence to scan all pending items across IM messages, meeting notes, calendar, doc comments, approvals, email, and tasks — prioritized by urgency, with direct handling or task creation. Multiple enterprise accounts scanned in parallel and merged.
   </p>
   <p align="center">
-    <img src="https://img.shields.io/badge/version-4.0.0-blue" alt="version">
+    <img src="https://img.shields.io/badge/version-4.2.0-blue" alt="version">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
     <img src="https://img.shields.io/badge/lark--cli-%3E%3D1.0.9-orange" alt="lark-cli">
     <img src="https://img.shields.io/badge/zero%20code-pure%20SKILL.md-blueviolet" alt="zero code">
@@ -22,13 +22,13 @@
 
 Every day you open Lark: 999+ messages, approval badges, calendar alerts, doc comments... scattered everywhere. By the time you've checked everything, 20 minutes are gone and you're still not sure if you missed anything. Using Lark across multiple organizations? Multiply that by the number of accounts you have.
 
-That's why I built lark-todo: **one sentence triggers a parallel scan across all your enterprise accounts × 7 data sources, AI merges and sorts everything by urgency, handles what it can on the spot, and creates tasks for the rest.** One account or many — one sentence is all it takes.
+That's why I built lark-todo: **one sentence triggers a parallel scan across all your enterprise accounts × 8 data sources, AI merges and sorts everything by urgency, handles what it can on the spot, and creates tasks for the rest.** One account or many — one sentence is all it takes.
 
 ## 🧭 Before / After
 
 | | Manual Checking | lark-todo |
 |---|:---:|:---:|
-| **Find action items** | Check messages, approvals, email, calendar... 20 min | 7 sources scanned in parallel, 30 sec |
+| **Find action items** | Check messages, approvals, email, calendar... 20 min | 8 sources scanned in parallel, 30 sec |
 | **Prioritize** | Memory and gut feeling | AI auto-sorts by urgency + calendar links |
 | **Handle items** | Switch between apps one by one | Pick a number → reply/approve/RSVP directly |
 | **Risk of missing** | High (especially doc comments, overdue tasks) | Full-platform scan, nothing missed |
@@ -85,15 +85,15 @@ flowchart TB
 
     Discover["🔍 Discover All Org Profiles"] --> Collect
 
-    subgraph Collect["📥 Phase 1: Collect (all orgs × 7 sources, fully parallel)"]
+    subgraph Collect["📥 Phase 1: Collect (all orgs × 8 sources, fully parallel)"]
         direction LR
         subgraph OrgA["🏢 Org A"]
             direction LR
-            C1["💬 IM"] ~~~ C2["🎥 Meetings"] ~~~ C3["📅 Calendar"] ~~~ C4["📝 Comments"] ~~~ C5["📋 Approvals"] ~~~ C6["✅ Tasks"] ~~~ C7["📧 Email"]
+            C1["💬 IM"] ~~~ C2["🎥 Meetings"] ~~~ C3["📅 Calendar"] ~~~ C4["📝 Comments"] ~~~ C5["📋 Pending"] ~~~ C8["📤 Initiated"] ~~~ C6["✅ Tasks"] ~~~ C7["📧 Email"]
         end
         subgraph OrgB["🏢 Org B"]
             direction LR
-            D1["💬 IM"] ~~~ D2["🎥 Meetings"] ~~~ D3["📅 Calendar"] ~~~ D4["📝 Comments"] ~~~ D5["📋 Approvals"] ~~~ D6["✅ Tasks"] ~~~ D7["📧 Email"]
+            D1["💬 IM"] ~~~ D2["🎥 Meetings"] ~~~ D3["📅 Calendar"] ~~~ D4["📝 Comments"] ~~~ D5["📋 Pending"] ~~~ D8["📤 Initiated"] ~~~ D6["✅ Tasks"] ~~~ D7["📧 Email"]
         end
     end
 
@@ -175,8 +175,10 @@ Total: 3 items | Alice: 2 / Alice Z.: 1
 ### Prerequisites
 
 - An AI agent supporting the SKILL.md spec ([Claude Code](https://claude.com/claude-code) / [Trae](https://www.trae.cn/) / [Cline](https://cline.bot/))
-- [lark-cli](https://github.com/larksuite/cli) >= 1.0.9
+- **Node.js >= 18** (hosts lark-cli; the skill auto-runs `npm install -g @larksuite/cli` on first use and skips if already present)
 - A Lark/Feishu custom app (guided setup on first use)
+
+> No manual lark-cli install required: `scripts/bootstrap.sh` probes and installs idempotently in Step 0. If it cannot install (Node.js missing, npm permission errors, etc.), it returns a non-zero exit code and the skill halts cleanly at Step 0 — you get actionable remediation hints instead of silent failures downstream.
 
 ### Install
 
@@ -200,13 +202,14 @@ Place the repository directory in the current project directory, or in that agen
 
 ### First-Time Setup
 
-The skill automatically guides you through three setup steps:
+The skill automatically guides you through four setup steps:
 
+0. **Dependency Bootstrap** (Step 0) — `scripts/bootstrap.sh` detects lark-cli; if missing it runs `npm install -g @larksuite/cli`. Idempotent — skipped on subsequent runs.
 1. **App Configuration** — Connect your Lark custom app (`lark-cli config init`)
 2. **User Authorization** — Grant all required permissions at once (11 domains)
 3. **Command Permission** — If your agent asks before running commands, allow `lark-cli`
 
-Once done, just talk to your agent — no further setup needed.
+Once done, just talk to your agent — no further setup needed. Step 0 re-probes each session in a few hundred milliseconds; it never reinstalls if lark-cli is already on PATH.
 
 ## 🔒 Security
 
@@ -224,24 +227,31 @@ cd lark-todo-skill
 # Basic tests (17 checks, quick validation)
 bash evals/run_tests.sh
 
-# Comprehensive tests (44 checks, full coverage)
+# Comprehensive tests (49 checks, full coverage)
 bash evals/run_full_tests.sh
+
+# Accelerator unit tests (16 pytest cases, offline shim — no Lark API calls)
+python -m pytest evals/test_scan.py -v
 ```
 
 | Test Group | Count | Coverage |
 |-----------|-------|---------|
+| Step 0 bootstrap | 5 | bootstrap.sh detection, exit-code branches (0/2), Node-missing hints |
 | Startup checks | 4 | config, auth, user info |
-| Data sources | 7 | All 7 source commands |
+| Data sources | 8 | All 8 source commands |
 | Two-route doc search | 3 | creator_ids + only_comment filters |
 | Incremental scan | 3 | Different time ranges |
 | Action commands | 15 | All 6 action types, param validation |
 | Response structure | 6 | Key JSON field presence |
 | Edge cases | 3 | Invalid params, permission checks |
 | Meeting notes chain | 3 | vc +notes / +recording params |
+| Accelerator pytest | 16 | scan.py command build, parallel exec, arg validation (shim-based) |
 
 ## 🛠️ Technical Highlights
 
-- **Zero code, pure Skill** — Implemented entirely via `SKILL.md` + references, no external scripts
+- **Hybrid mode** — Runs on pure SKILL.md across every agent by default; when Python 3.8+ is available, automatically enables `scripts/scan.py` to collect all 8 data sources in one parallel pass; any accelerator failure falls back to pure SKILL.md without blocking the scan
+- **Zero pip dependencies** — The accelerator only uses the Python standard library (`asyncio` + `subprocess` + `json`), no `pip install` required
+- **Accelerate without re-judging** — The script only does "parallel scan + result normalization"; filtering, priority, deduplication, and actions still happen on the agent side, keeping behavior identical to pure SKILL.md mode
 - **Self-contained** — Auth, permissions, command params all embedded, no dependency on other skills
 - **Multi-org parallel scan** — Auto-discovers all profiles, parallel collection, cross-org merged sorting
 - **Two-route doc search** — `creator_ids` for my docs + `only_comment` for @me comments
@@ -254,12 +264,17 @@ bash evals/run_full_tests.sh
 lark-todo-skill/
 ├── SKILL.md                  # Main skill file (workflow, priority logic, output format)
 ├── references/
-│   ├── data-sources.md       # Detailed CLI commands for 7 data sources
+│   ├── data-sources.md       # Detailed CLI commands for 8 data sources
 │   └── action-dispatch.md    # Detailed CLI commands for 6 action types
+├── scripts/
+│   ├── bootstrap.sh          # Step 0: idempotent lark-cli detection + auto npm install
+│   └── scan.py               # Optional accelerator: parallel collect 8 sources (stdlib only)
 ├── evals/
-│   ├── evals.json            # Test case definitions
+│   ├── evals.json            # CLI smoke test cases
+│   ├── skill-prompts.json    # Prompt-level evals (skill-creator spec)
+│   ├── test_scan.py          # Accelerator pytest suite (offline shim)
 │   ├── run_tests.sh          # Basic tests (17 checks)
-│   └── run_full_tests.sh     # Comprehensive tests (44 checks)
+│   └── run_full_tests.sh     # Comprehensive tests (49 checks)
 ├── LICENSE                   # MIT License
 ├── README.md                 # Chinese documentation
 └── README_EN.md              # English documentation

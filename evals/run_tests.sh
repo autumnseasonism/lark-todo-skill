@@ -35,7 +35,7 @@ echo " Date: $TODAY"
 echo "================================================"
 echo ""
 
-echo "[Test 1] 全量扫描 — 7 个数据源命令"
+echo "[Test 1] 全量扫描 — 8 个数据源命令"
 echo "------------------------------------------------"
 check "contact +get-user" \
   'lark-cli contact +get-user --format json' \

@@ -1,0 +1,41 @@
+{
+  "skill_name": "lark-todo",
+  "description": "skill-creator 规范的 prompt 级评测，用于评测 skill 对真实用户语句的响应质量。与 evals.json（CLI 冒烟测试）互补，两者用途不同：evals.json 验证每条 lark-cli 命令能跑，本文件验证 skill 整体产出符合预期。",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "看看今天还有啥没干的活么",
+      "expected_output": "完整走通 Step A/B/C 启动检查，然后按 8 个数据源并行扫描，产出按紧急/普通/低优先级分层的待办列表。如有多 profile 应带企业标签；单 profile 则不带。"
+    },
+    {
+      "id": 1,
+      "prompt": "下午有啥新的没",
+      "expected_output": "识别为增量扫描模式，时间范围用今天 12:00 ~ 当前时间，而不是全量扫描。输出标注「增量扫描」。"
+    },
+    {
+      "id": 2,
+      "prompt": "忙不忙",
+      "expected_output": "识别为随口询问也应触发扫描。输出保持友好，给出简短的今日待办概览。"
+    },
+    {
+      "id": 3,
+      "prompt": "再加一个飞书应用，是我另外一个公司的",
+      "expected_output": "触发多 profile 管理流程：调用 lark-cli config init --new，引导用户完成新 profile 的配置和授权，完成后自动纳入扫描列表。"
+    },
+    {
+      "id": 4,
+      "prompt": "第 2 条帮我直接回复下，就说我晚点看",
+      "expected_output": "对第 2 条事项（假设是 IM 消息）查找其所属 profile 后，拟好回复草稿展示给用户确认，确认后用 im +messages-reply 并带对应 --profile 发送。不能直接处理的类型应建任务而非强行处理。"
+    },
+    {
+      "id": 5,
+      "prompt": "看下今天待办（要求：用 scripts/scan.py 加速）",
+      "expected_output": "检测到 Python 3.8+ 可用且 <SKILL_DIR>/scripts/scan.py 存在，调用加速器一次性并行采集 8 数据源，基于归一化 JSON 进行过滤/优先级/去重/行动，最终输出与纯 SKILL.md 模式一致的待办清单。"
+    },
+    {
+      "id": 6,
+      "prompt": "看下今天待办（前提：环境里没有 python 或 scan.py 缺失）",
+      "expected_output": "加速器不可用时自动降级到纯 SKILL.md 流程，由 Agent 逐条并行发起 lark-cli 命令完成采集，输出不因降级而丢失数据源或字段。不应向用户抛错或要求手动安装 Python。"
+    }
+  ]
+}

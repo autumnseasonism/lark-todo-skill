@@ -32,7 +32,19 @@ lark-cli approval tasks reject \
   --profile <PROFILE>
 ```
 
-> `instance_code` 和 `task_id` 来自采集阶段 `approval tasks query` 的返回结果。`comment` 为审批意见，可为空字符串。API 自动使用当前登录用户身份，无需传 `user_id`。
+> `instance_code` 和 `task_id` 来自采集阶段 `approval tasks query` 的返回结果（topic:"1" 待办审批）。`comment` 为审批意见，可为空字符串。API 自动使用当前登录用户身份，无需传 `user_id`。
+
+### 提醒审批人（催办）
+
+```bash
+lark-cli approval tasks remind \
+  --data '{"instance_code":"<INSTANCE_CODE>","task_id":"<TASK_ID>"}' \
+  --profile <PROFILE>
+```
+
+> `instance_code` 和 `task_id` 来自采集阶段 `approval tasks query` 的返回结果（topic:"3" 我发起的审批）。用于向我发起的审批中的当前审批人发送催办提醒。
+>
+> 催办操作需用户确认：展示审批单摘要和当前审批人，用户确认后执行。
 
 ### 回复文档评论
 

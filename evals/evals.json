@@ -26,7 +26,7 @@
     {
       "id": 1,
       "name": "full-scan-all-sources",
-      "description": "全量扫描：验证 7 个数据源命令全部可执行且返回有效 JSON（单 profile 模式）",
+      "description": "全量扫描：验证 8 个数据源命令全部可执行且返回有效 JSON（单 profile 模式）",
       "commands": [
         {
           "name": "contact_get_user",
@@ -59,6 +59,11 @@
           "assertions": ["code=0", "has data.tasks array"]
         },
         {
+          "name": "approval_tasks_query_initiated",
+          "cmd": "lark-cli approval tasks query --params '{\"topic\":\"3\"}' --format json",
+          "assertions": ["code=0", "has data.tasks array"]
+        },
+        {
           "name": "task_get_my_tasks",
           "cmd": "lark-cli task +get-my-tasks --complete=false --due-end \"<TODAY>T23:59:59+08:00\" --format json",
           "assertions": ["ok=true"]
@@ -73,7 +78,7 @@
     {
       "id": 1.5,
       "name": "full-scan-with-profile",
-      "description": "多 profile 扫描：验证带 --profile 参数时 7 个数据源命令仍可正常执行",
+      "description": "多 profile 扫描：验证带 --profile 参数时 8 个数据源命令仍可正常执行",
       "commands": [
         {
           "name": "contact_get_user_profile",
@@ -106,6 +111,11 @@
           "assertions": ["code=0", "has data.tasks array"]
         },
         {
+          "name": "approval_tasks_query_initiated_profile",
+          "cmd": "lark-cli approval tasks query --params '{\"topic\":\"3\"}' --format json --profile <PROFILE>",
+          "assertions": ["code=0", "has data.tasks array"]
+        },
+        {
           "name": "task_get_my_tasks_profile",
           "cmd": "lark-cli task +get-my-tasks --complete=false --due-end \"<TODAY>T23:59:59+08:00\" --format json --profile <PROFILE>",
           "assertions": ["ok=true"]
@@ -135,6 +145,11 @@
         {
           "name": "approval_reject_schema",
           "cmd": "lark-cli schema approval.tasks.reject",
+          "assertions": ["has instance_code in requestBody", "has task_id in requestBody", "httpMethod=POST"]
+        },
+        {
+          "name": "approval_remind_schema",
+          "cmd": "lark-cli schema approval.tasks.remind",
           "assertions": ["has instance_code in requestBody", "has task_id in requestBody", "httpMethod=POST"]
         },
         {

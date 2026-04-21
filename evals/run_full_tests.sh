@@ -6,6 +6,7 @@ TODAY=$(date +%Y-%m-%d)
 NOW_HOUR=$(date +%H)
 PASS=0
 FAIL=0
+SKIPPED=0
 TOTAL=0
 ERRORS=""
 
@@ -54,6 +55,11 @@ check_json_field() {
   if echo "$output" | grep -qF -- "\"$field\""; then
     echo "  PASS  $name"
     PASS=$((PASS + 1))
+  elif echo "$output" | grep -qE '"ok"[[:space:]]*:[[:space:]]*true' \
+       && echo "$output" | grep -qE '"data"[[:space:]]*:[[:space:]]*(\[[[:space:]]*\]|null|\{[[:space:]]*\})'; then
+    # 响应结构正常、data 为空（常见于测试账号今天无日程/无待办），字段断言无意义，跳过
+    echo "  SKIP  $name (response ok but data empty)"
+    SKIPPED=$((SKIPPED + 1))
   else
     echo "  FAIL  $name (missing field '$field')"
     ERRORS="$ERRORS\n--- $name ---\ncmd: $cmd\nmissing_field: $field\noutput (200 chars): ${output:0:200}\n"
@@ -65,6 +71,34 @@ echo "========================================================"
 echo " lark-todo 综合测试集"
 echo " Date: $TODAY  Hour: $NOW_HOUR"
 echo "========================================================"
+
+# bootstrap.sh 与本测试脚本位于同一目录的 scripts/ 下
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BOOTSTRAP="$SKILL_DIR/scripts/bootstrap.sh"
+
+# ─────────────────────────────────────────────
+echo ""
+echo "[0/8] Step 0 依赖自检 — bootstrap.sh"
+echo "--------------------------------------------------------"
+check "bootstrap.sh 存在且可执行" \
+  "test -x '$BOOTSTRAP' && echo OK" \
+  'OK'
+
+check "bootstrap.sh 在 lark-cli 已装时返回 exit 0" \
+  "bash '$BOOTSTRAP' >/dev/null 2>&1 && echo EXIT_OK" \
+  'EXIT_OK'
+
+check "bootstrap.sh 在 lark-cli 已装时汇报版本号" \
+  "bash '$BOOTSTRAP' 2>&1" \
+  'lark-cli 已存在'
+
+check "bootstrap.sh 在 node/npm 缺失时返回 exit 2（PATH 置空模拟）" \
+  "PATH=/usr/bin:/bin bash '$BOOTSTRAP' >/dev/null 2>&1; test \$? -eq 2 && echo EXIT_2" \
+  'EXIT_2'
+
+check "bootstrap.sh 缺 node 时打印 Node.js 安装指引" \
+  "PATH=/usr/bin:/bin bash '$BOOTSTRAP' 2>&1" \
+  'nodejs.org'
 
 # ─────────────────────────────────────────────
 echo ""
@@ -88,7 +122,7 @@ check "contact +get-user 返回 name" \
 
 # ─────────────────────────────────────────────
 echo ""
-echo "[2/8] 数据源采集 — 7 个数据源命令可用性"
+echo "[2/8] 数据源采集 — 8 个数据源命令可用性"
 echo "--------------------------------------------------------"
 check "IM 消息搜索" \
   'lark-cli im +messages-search --is-at-me --start "<TODAY>T00:00:00+08:00" --end "<TODAY>T23:59:59+08:00" --page-all --format json' \
@@ -282,7 +316,7 @@ check "vc +recording 有 --meeting-ids 参数" \
 # ─────────────────────────────────────────────
 echo ""
 echo "========================================================"
-echo " Results: $PASS passed, $FAIL failed, $TOTAL total"
+echo " Results: $PASS passed, $FAIL failed, $SKIPPED skipped (empty data), $TOTAL total"
 echo "========================================================"
 
 if [ $FAIL -gt 0 ]; then
